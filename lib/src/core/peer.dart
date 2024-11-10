@@ -2,6 +2,8 @@ import 'dart:ffi';
 
 import 'package:enet/src/bindings/lib_enet.dart';
 import 'package:enet/src/bindings/enet_bindings.dart' as bindings;
+import 'package:enet/src/core/packet.dart';
+import 'package:enet/src/enet_exception.dart';
 
 final _instance = LibENet.instance;
 
@@ -10,5 +12,16 @@ class ENetPeer {
 
   ENetPeer.parse(Pointer<bindings.ENetPeer> peer) : _peer = peer {}
 
-  void disconnect({int data = 0}) {}
+  void send(int channelID, ENetPacket packet) {
+    packet.done();
+    int err = _instance.enet_peer_send(_peer, channelID, packet.pointer);
+
+    if (err < 0) {
+      throw ENetException('Failed to send packet.');
+    }
+  }
+
+  void disconnect({int data = 0}) {
+    _instance.enet_peer_disconnect(_peer, data);
+  }
 }

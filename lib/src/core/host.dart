@@ -1,16 +1,16 @@
+import 'dart:async';
 import 'dart:ffi';
+import 'dart:isolate';
 
-import 'package:enet/enet_dart.dart';
-import 'package:enet/src/core/address.dart';
+import 'package:enet/enet.dart';
 import 'package:enet/src/bindings/enet_bindings.dart' as bindings;
 import 'package:enet/src/bindings/lib_enet.dart';
-import 'package:enet/src/core/packet.dart';
-import 'package:enet/src/utils/event.dart';
+import 'package:enet/src/enet_exception.dart';
 import 'package:ffi/ffi.dart';
 
 final _instance = LibENet.instance;
 
-class ENetHost implements Finalizable {
+final class ENetHost implements Finalizable {
   late Pointer<bindings.ENetHost> _host;
 
   static final Finalizer<Pointer<bindings.ENetHost>> _finalizer = Finalizer((pointer) {
@@ -31,8 +31,8 @@ class ENetHost implements Finalizable {
     this.address,
     required this.peerCount,
     required this.channelLimit,
-    required this.incomingBandwidth,
-    required this.outgoingBandwidth,
+    this.incomingBandwidth = 0,
+    this.outgoingBandwidth = 0,
   }) {
     _host = _instance.enet_host_create(
       address?.pointer ?? nullptr,
@@ -58,38 +58,52 @@ class ENetHost implements Finalizable {
     );
 
     if (cPeer == nullptr) {
-      throw Exception('ENet clouldn`t connect.');
+      throw ENetException(
+        'Failed to connect to host ${address.host}.',
+      );
     }
 
-    // TODO: return ENet peer
     return ENetPeer.parse(cPeer);
   }
 
-  ENetEvent? service({int timeout = 5000}) {
+  Future<ENetEvent> service({int timeout = 0}) async {
     Pointer<bindings.ENetEvent> cEvent = malloc<bindings.ENetEvent>();
+    int res = 0;
 
     try {
-      int err = _instance.enet_host_service(_host, cEvent, timeout);
+      if (timeout > 0) {
+        ReceivePort receivePort = ReceivePort();
 
-      if (err == 0) {
-        //there is no event to return
-        return null;
+        await Isolate.spawn(_serviceIsolated, [receivePort.sendPort, _host, cEvent, timeout]);
+        res = await receivePort.first;
+      } else {
+        res = _instance.enet_host_service(_host, cEvent, timeout);
       }
-      if (err < 0) {
-        throw Exception("ENet host service failure.");
+
+      if (res < 0) {
+        throw ENetException("Host service failed.");
       }
-      // TODO: throw if error
-      // TODO: return enet event
+
       return ENetEvent.parse(cEvent);
     } finally {
-      // malloc.free(cEvent);
+      malloc.free(cEvent);
     }
   }
 
   void flush() => _instance.enet_host_flush(_host);
 
   void broadcast(int channelID, ENetPacket packet) {
-    // TODO: Detach packet
+    packet.done();
     _instance.enet_host_broadcast(_host, channelID, packet.pointer);
   }
+}
+
+void _serviceIsolated(List<dynamic> arg) async {
+  final port = arg[0] as SendPort;
+  final host = arg[1] as Pointer<bindings.ENetHost>;
+  final event = arg[2] as Pointer<bindings.ENetEvent>;
+  final timeout = arg[3] as int;
+
+  final res = _instance.enet_host_service(host, event, timeout);
+  port.send(res);
 }

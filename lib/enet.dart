@@ -1,4 +1,6 @@
-export 'src/enet.dart';
+library enet;
+
+export 'src/core/enet.dart';
 export 'src/types.dart';
 export 'src/core/packet.dart';
 export 'src/core/address.dart';

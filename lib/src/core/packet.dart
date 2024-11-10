@@ -1,7 +1,7 @@
 import 'dart:core';
 import 'dart:ffi';
 import 'dart:typed_data';
-import 'package:enet/enet_dart.dart';
+import 'package:enet/enet.dart';
 import 'package:ffi/ffi.dart';
 
 import 'package:enet/src/bindings/lib_enet.dart';
@@ -31,9 +31,12 @@ class ENetPacket implements Finalizable {
   ENetPacket.parse(Pointer<bindings.ENetPacket> packet)
       : _packet = packet,
         data = _extractDataFromPointer(packet),
-        flags = ENetPacketFlag.values.singleWhere(
+        flags = ENetPacketFlag
+            .sent /* ENetPacketFlag.values.singleWhere(
           (element) => element.value == packet.ref.flags,
-        ) {
+        ) */
+  {
+    print(packet.ref.flags);
     _finalizer.attach(this, _packet.cast(), detach: this);
   }
 
@@ -65,6 +68,8 @@ class ENetPacket implements Finalizable {
       malloc.free(_data);
     }
   }
+
+  void done() => _finalizer.detach(this);
 
   Pointer<bindings.ENetPacket> get pointer => _packet;
 }
