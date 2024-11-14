@@ -3,11 +3,8 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:enet/src/types.dart';
-import 'package:enet/src/bindings/lib_enet.dart';
 import 'package:enet/src/bindings/enet_bindings.dart' as bindings;
 import 'package:ffi/ffi.dart';
-
-final _instance = LibENet.instance;
 
 final class ENetAddress implements Finalizable {
   late final Pointer<bindings.ENetAddress> _address;
@@ -37,8 +34,8 @@ final class ENetAddress implements Finalizable {
     Pointer<Char> cIp = calloc<Char>(ENET_MAX_HOST_NAME);
 
     try {
-      int host = _instance.enet_address_get_host(_address, cHost, ENET_MAX_HOST_NAME);
-      int ip = _instance.enet_address_get_host_ip(_address, cIp, ENET_MAX_HOST_NAME);
+      int host = bindings.enet_address_get_host_new(_address, cHost, ENET_MAX_HOST_NAME);
+      int ip = bindings.enet_address_get_host_ip_new(_address, cIp, ENET_MAX_HOST_NAME);
 
       if (host < 0 && ip < 0) {
         //TODO: add ENetException
@@ -59,7 +56,7 @@ final class ENetAddress implements Finalizable {
 
   void setHost(InternetAddress ip) {
     Pointer<Utf8> cValue = ip.host.toNativeUtf8();
-    int err = _instance.enet_address_set_host(_address, cValue.cast<Char>());
+    int err = bindings.enet_address_set_host(_address, cValue.cast<Char>());
 
     if (err < 0) {
       //TODO: add ENetException

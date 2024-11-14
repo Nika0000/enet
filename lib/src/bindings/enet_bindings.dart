@@ -2,490 +2,346 @@
 
 import 'dart:ffi' as ffi;
 
-class EnetBindings {
-  /// Holds the symbol lookup function.
-  final ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName) _lookup;
+const assetId = 'package:enet/enet.dart';
 
-  /// The symbols are looked up in [dynamicLibrary].
-  EnetBindings(ffi.DynamicLibrary dynamicLibrary) : _lookup = dynamicLibrary.lookup;
+// =======================================================================//
+// !
+// ! ENET Functions
+// !
+// =======================================================================//
 
-  /// The symbols are looked up with [lookup].
-  EnetBindings.fromLookup(ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName) lookup)
-      : _lookup = lookup;
+/// Initializes ENet globally.
+/// Must be called prior to using any functions in ENet.
+///
+/// returns 0 on success < 0 on failure
+@ffi.Native<ffi.Int Function()>(
+  symbol: 'enet_initialize',
+  assetId: assetId,
+)
+external int enet_initialize();
 
-  // =======================================================================//
-  // !
-  // ! Public API
-  // !
-  // =======================================================================//
+/// Shuts down ENet globally.
+/// Should be called when a program that has initialized ENet exits.
+@ffi.Native<ffi.Void Function()>(
+  symbol: 'enet_deinitialize',
+  assetId: assetId,
+)
+external void enet_deinitialize();
 
-  /// Initializes ENet globally.
-  /// Must be called prior to using any functions in ENet.
-  ///
-  /// returns 0 on success < 0 on failure
-  int enet_initialize() {
-    return _enet_initialize();
-  }
+/// Gives the linked version of the ENet library.
+/// returns the version number
+@ffi.Native<ffi.Uint32 Function()>(
+  symbol: 'enet_linked_version',
+  assetId: assetId,
+)
+external int enet_linked_version();
 
-  /// Shuts down ENet globally.
-  /// Should be called when a program that has initialized ENet exits.
-  void enet_deinitialize() {
-    return _enet_deinitialize();
-  }
+/// Returns the monotonic time in milliseconds.
+/// Its initial value is unspecified unless otherwise set.
+@ffi.Native<ffi.Uint32 Function()>(
+  symbol: 'enet_time_get',
+  assetId: assetId,
+)
+external int enet_time_get();
 
-  /// Gives the linked version of the ENet library.
-  /// returns the version number
-  int enet_linked_version() {
-    return _enet_linked_version();
-  }
+// =======================================================================//
+// !
+// ! ADDRESS Functions
+// !
+// =======================================================================//
 
-  /// Returns the monotonic time in milliseconds.
-  /// Its initial value is unspecified unless otherwise set.
-  int enet_time_get() {
-    return _enet_time_get();
-  }
+/// Attempts to do a reverse lookup of the host field in the address parameter.
+/// @param address    address used for reverse lookup
+/// @param hostName   destination for name, must not be NULL
+/// @param nameLength maximum length of hostName.
+/// @returns the null-terminated name of the host in hostName on success
+/// @retval 0 on success
+/// @retval < 0 on failure
+@ffi.Native<ffi.Int Function(ffi.Pointer<ENetAddress>, ffi.Pointer<ffi.Char>, ffi.Size)>(
+  symbol: 'enet_address_get_host_new',
+  assetId: assetId,
+)
+external int enet_address_get_host_new(
+  ffi.Pointer<ENetAddress> address,
+  ffi.Pointer<ffi.Char> hostName,
+  int nameLength,
+);
 
-  /* ENET socket functions below */
-  /* ENET socket version end */
+/// Attempts to resolve the host named by the parameter hostName and sets
+/// the host field in the address parameter if successful.
+/// @param address destination to store resolved address
+/// @param hostName host name to lookup
+/// @retval 0 on success
+/// @retval < 0 on failure
+/// @returns the address of the given hostName in address on success
+@ffi.Native<ffi.Int Function(ffi.Pointer<ENetAddress>, ffi.Pointer<ffi.Char>)>(
+  symbol: 'enet_address_set_host_old',
+  assetId: assetId,
+)
+external int enet_address_set_host(
+  ffi.Pointer<ENetAddress> address,
+  ffi.Pointer<ffi.Char> hostName,
+);
 
-  /// Attempts to parse the printable form of the IP address in the parameter hostName
-  /// and sets the host field in the address parameter if successful.
-  /// @param address destination to store the parsed IP address
-  /// @param hostName IP address to parse
-  /// @retval 0 on success
-  /// @retval < 0 on failure
-  /// @returns the address of the given hostName in address on success
-  int enet_address_set_host_ip(
-    ffi.Pointer<ENetAddress> address,
-    ffi.Pointer<ffi.Char> hostName,
-  ) {
-    return _enet_address_set_host_ip_new(
-      address,
-      hostName,
-    );
-  }
+/// Attempts to parse the printable form of the IP address in the parameter hostName
+/// and sets the host field in the address parameter if successful.
+/// @param address destination to store the parsed IP address
+/// @param hostName IP address to parse
+/// @retval 0 on success
+/// @retval < 0 on failure
+/// @returns the address of the given hostName in address on success
+@ffi.Native<ffi.Int Function(ffi.Pointer<ENetAddress>, ffi.Pointer<ffi.Char>)>(
+  symbol: 'enet_address_set_host_ip_old', // TODO: isolate | new
+  assetId: assetId,
+)
+external int enet_address_set_host_ip(
+  ffi.Pointer<ENetAddress> address,
+  ffi.Pointer<ffi.Char> hostName,
+);
 
-  /// Gives the printable form of the IP address specified in the address parameter.
-  /// @param address    address printed
-  /// @param hostName   destination for name, must not be NULL
-  /// @param nameLength maximum length of hostName.
-  /// @returns the null-terminated name of the host in hostName on success
-  /// @retval 0 on success
-  /// @retval < 0 on failure
-  int enet_address_get_host_ip(
-    ffi.Pointer<ENetAddress> address,
-    ffi.Pointer<ffi.Char> hostName,
-    int nameLength,
-  ) {
-    return _enet_address_get_host_ip_new(
-      address,
-      hostName,
-      nameLength,
-    );
-  }
+/// Gives the printable form of the IP address specified in the address parameter.
+/// @param address    address printed
+/// @param hostName   destination for name, must not be NULL
+/// @param nameLength maximum length of hostName.
+/// @returns the null-terminated name of the host in hostName on success
+/// @retval 0 on success
+/// @retval < 0 on failure
+@ffi.Native<
+    ffi.Int Function(
+      ffi.Pointer<ENetAddress>,
+      ffi.Pointer<ffi.Char>,
+      ffi.Size,
+    )>(
+  symbol: 'enet_address_get_host_ip_new',
+  assetId: assetId,
+)
+external int enet_address_get_host_ip_new(
+  ffi.Pointer<ENetAddress> address,
+  ffi.Pointer<ffi.Char> hostName,
+  int nameLength,
+);
 
-  /// Attempts to do a reverse lookup of the host field in the address parameter.
-  /// @param address    address used for reverse lookup
-  /// @param hostName   destination for name, must not be NULL
-  /// @param nameLength maximum length of hostName.
-  /// @returns the null-terminated name of the host in hostName on success
-  /// @retval 0 on success
-  /// @retval < 0 on failure
-  int enet_address_get_host(
-    ffi.Pointer<ENetAddress> address,
-    ffi.Pointer<ffi.Char> hostName,
-    int nameLength,
-  ) {
-    return _enet_address_get_host_new(
-      address,
-      hostName,
-      nameLength,
-    );
-  }
+// =======================================================================//
+// !
+// ! HOST Functions
+// !
+// =======================================================================//
 
-  /// Attempts to resolve the host named by the parameter hostName and sets
-  /// the host field in the address parameter if successful.
-  /// @param address destination to store resolved address
-  /// @param hostName host name to lookup
-  /// @retval 0 on success
-  /// @retval < 0 on failure
-  /// @returns the address of the given hostName in address on success
-  int enet_address_set_host(
-    ffi.Pointer<ENetAddress> address,
-    ffi.Pointer<ffi.Char> hostName,
-  ) {
-    return _enet_address_set_host_old(
-      address,
-      hostName,
-    );
-  }
+/// Creates a host for communicating to peers.
+///
+/// `address` the address at which other peers may connect to this host. If NULL, then no peers may connect to the host.
+/// `peerCount` the maximum number of peers that should be allocated for the host.
+/// `channelLimit` the maximum number of channels allowed; if 0, then this is equivalent to ENET_PROTOCOL_MAXIMUM_CHANNEL_COUNT
+/// `incomingBandwidth` downstream bandwidth of the host in bytes/second; if 0, ENet will assume unlimited bandwidth.
+/// `outgoingBandwidth` upstream bandwidth of the host in bytes/second; if 0, ENet will assume unlimited bandwidth.
+///
+/// returns the host on success and null on failure
+///
+/// remarks ENet will strategically drop packets on specific sides of a connection between hosts
+/// to ensure the host's bandwidth is not overwhelmed.  The bandwidth parameters also determine
+/// the window size of a connection which limits the amount of reliable packets that may be in transit
+/// at any given time.
+@ffi.Native<
+    ffi.Pointer<ENetHost> Function(
+      ffi.Pointer<ENetAddress>,
+      ffi.Size,
+      ffi.Size,
+      ffi.Uint32,
+      ffi.Uint32,
+    )>(
+  symbol: 'enet_host_create',
+  assetId: assetId,
+)
+external ffi.Pointer<ENetHost> enet_host_create(
+  ffi.Pointer<ENetAddress> address,
+  int peerCount,
+  int channelLimit,
+  int incomingBandwidth,
+  int outgoingBandwidth,
+);
 
-  /* ENET HOST FUNCTIONS */
+/// Initiates a connection to a foreign host.
+///
+/// `host` host seeking the connection
+/// `address` destination for the connection
+/// `channelCount` number of channels to allocate
+/// `data` user data supplied to the receiving host
+///
+/// returns a peer representing the foreign host on success, NULL on failure
+/// remarks The peer returned will have not completed the connection until enet_host_service()
+/// notifies of an ENET_EVENT_TYPE_CONNECT event for the peer.
+@ffi.Native<
+    ffi.Pointer<ENetPeer> Function(
+      ffi.Pointer<ENetHost>,
+      ffi.Pointer<ENetAddress>,
+      ffi.Size,
+      ffi.Uint32,
+    )>(
+  symbol: 'enet_host_connect',
+  assetId: assetId,
+)
+external ffi.Pointer<ENetPeer> enet_host_connect(
+  ffi.Pointer<ENetHost> host,
+  ffi.Pointer<ENetAddress> address,
+  int channelCount,
+  int data,
+);
 
-  /// Creates a host for communicating to peers.
-  ///
-  /// `address` the address at which other peers may connect to this host. If NULL, then no peers may connect to the host.
-  /// `peerCount` the maximum number of peers that should be allocated for the host.
-  /// `channelLimit` the maximum number of channels allowed; if 0, then this is equivalent to ENET_PROTOCOL_MAXIMUM_CHANNEL_COUNT
-  /// `incomingBandwidth` downstream bandwidth of the host in bytes/second; if 0, ENet will assume unlimited bandwidth.
-  /// `outgoingBandwidth` upstream bandwidth of the host in bytes/second; if 0, ENet will assume unlimited bandwidth.
-  ///
-  /// returns the host on success and null on failure
-  ///
-  /// remarks ENet will strategically drop packets on specific sides of a connection between hosts
-  /// to ensure the host's bandwidth is not overwhelmed.  The bandwidth parameters also determine
-  /// the window size of a connection which limits the amount of reliable packets that may be in transit
-  /// at any given time.
-  ffi.Pointer<ENetHost> enet_host_create(
-    ffi.Pointer<ENetAddress> address,
-    int peerCount,
-    int channelLimit,
-    int incomingBandwidth,
-    int outgoingBandwidth,
-  ) {
-    return _enet_host_create(
-      address,
-      peerCount,
-      channelLimit,
-      incomingBandwidth,
-      outgoingBandwidth,
-    );
-  }
+/// Waits for events on the host specified and shuttles packets between
+/// the host and its peers.
+///
+/// `host` host to service
+/// `event` an event structure where event details will be placed if one occurs
+///         if event == NULL then no events will be delivered
+/// `timeout` number of milliseconds that ENet should wait for events
+///
+/// returns > 0  if an event occurred within the specified time limit
+/// returns 0 if no event occurred
+/// returns < 0 on failure
+/// remarks enet_host_service should be called fairly regularly for adequate performance
+/// ingoing host
+@ffi.Native<
+    ffi.Int Function(
+      ffi.Pointer<ENetHost>,
+      ffi.Pointer<ENetEvent>,
+      ffi.Uint32,
+    )>(
+  symbol: 'enet_host_service',
+  assetId: assetId,
+)
+external int enet_host_service(
+  ffi.Pointer<ENetHost> host,
+  ffi.Pointer<ENetEvent> event,
+  int timeout,
+);
 
-  /// Initiates a connection to a foreign host.
-  ///
-  /// `host` host seeking the connection
-  /// `address` destination for the connection
-  /// `channelCount` number of channels to allocate
-  /// `data` user data supplied to the receiving host
-  ///
-  /// returns a peer representing the foreign host on success, NULL on failure
-  /// remarks The peer returned will have not completed the connection until enet_host_service()
-  /// notifies of an ENET_EVENT_TYPE_CONNECT event for the peer.
-  ffi.Pointer<ENetPeer> enet_host_connect(
-    ffi.Pointer<ENetHost> host,
-    ffi.Pointer<ENetAddress> address,
-    int channelCount,
-    int data,
-  ) {
-    return _enet_host_connect(
-      host,
-      address,
-      channelCount,
-      data,
-    );
-  }
+/// Destroys the host and all resources associated with it.
+/// `host` pointer to the host to destroy
+@ffi.Native<ffi.Void Function(ffi.Pointer<ENetHost>)>(
+  symbol: 'enet_host_destroy',
+  assetId: assetId,
+)
+external void enet_host_destroy(
+  ffi.Pointer<ENetHost> host,
+);
 
-  /// Waits for events on the host specified and shuttles packets between
-  /// the host and its peers.
-  ///
-  /// `host` host to service
-  /// `event` an event structure where event details will be placed if one occurs
-  ///         if event == NULL then no events will be delivered
-  /// `timeout` number of milliseconds that ENet should wait for events
-  ///
-  /// returns > 0  if an event occurred within the specified time limit
-  /// returns 0 if no event occurred
-  /// returns < 0 on failure
-  /// remarks enet_host_service should be called fairly regularly for adequate performance
-  /// ingoing host
-  int enet_host_service(
-    ffi.Pointer<ENetHost> host,
-    ffi.Pointer<ENetEvent> event,
-    int timeout,
-  ) {
-    return _enet_host_service(
-      host,
-      event,
-      timeout,
-    );
-  }
+/// Adjusts the bandwidth limits of a host.
+/// `host` host to adjust
+/// `incommingBandwidth` new incoming bandwidth
+/// `outgoingBandwidth` new outgoing bandwidth
+///
+/// the incoming and outgoing bandwidth parameters are identical in function
+/// to thos specified in enet_host_create().
+@ffi.Native<ffi.Void Function(ffi.Pointer<ENetHost>, ffi.Uint32, ffi.Uint32)>(
+  symbol: 'enet_host_bandwidth_limit',
+  assetId: assetId,
+)
+external void enet_host_bandwidth_limit(
+  ffi.Pointer<ENetHost> host,
+  int incommingBandwidth,
+  int outgoingBandwidth,
+);
 
-  /// Sends any queued packets on the host specified to its designated peers.
-  ///
-  /// `host` host to flush
-  /// remarks this function need only be used in circumstances where one wishes to send queued packets earlier than in a call to enet_host_service()
-  /// ingroup host
-  void enet_host_flush(
-    ffi.Pointer<ENetHost> host,
-  ) {
-    return _enet_host_flush(
-      host,
-    );
-  }
+/// Sends any queued packets on the host specified to its designated peers.
+///
+/// `host` host to flush
+/// remarks this function need only be used in circumstances where one wishes to send queued packets earlier than in a call to enet_host_service()
+/// ingroup host
+@ffi.Native<ffi.Void Function(ffi.Pointer<ENetHost>)>(
+  symbol: 'enet_host_flush',
+  assetId: assetId,
+)
+external void enet_host_flush(
+  ffi.Pointer<ENetHost> host,
+);
 
-  /// Destroys the host and all resources associated with it.
-  /// `host` pointer to the host to destroy
-  void enet_host_destroy(
-    ffi.Pointer<ENetHost> host,
-  ) {
-    return _enet_host_destroy(
-      host,
-    );
-  }
+// =======================================================================//
+// !
+// ! PACKET Functions
+// !
+// =======================================================================//
 
-  /// Adjusts the bandwidth limits of a host.
-  /// `host` host to adjust
-  /// `incommingBandwidth` new incoming bandwidth
-  /// `outgoingBandwidth` new outgoing bandwidth
-  ///
-  /// the incoming and outgoing bandwidth parameters are identical in function
-  /// to thos specified in enet_host_create().
-  void enet_host_bandwidth_limit(
-    ffi.Pointer<ENetHost> host,
-    int incommingBandwidth,
-    int outgoingBandwidth,
-  ) {
-    return _enet_host_bandwidth_limit(
-      host,
-      incommingBandwidth,
-      outgoingBandwidth,
-    );
-  }
+/// Creates a packet that may be sent to a peer.
+///
+/// `data` initial contents of the packet's data; the packet's data will remain uninitialized if data is NULL.
+/// `dataLength` size of the data allocated for this packet
+/// `flags` flags for this packet as described for the ENetPacket structure.
+///
+/// returns the packet on success, null on failure.
+@ffi.Native<ffi.Pointer<ENetPacket> Function(ffi.Pointer<ffi.Void>, ffi.Size, ffi.Uint32)>(
+  symbol: 'enet_packet_create',
+  assetId: assetId,
+)
+external ffi.Pointer<ENetPacket> enet_packet_create(
+  ffi.Pointer<ffi.Void> data,
+  int dataLength,
+  int flags,
+);
 
-  void enet_host_bandwidth_throttle(
-    ffi.Pointer<ENetHost> host,
-  ) {
-    return _enet_host_bandwidth_throttle(
-      host,
-    );
-  }
+/// Destroys the packet and deallocates its data.
+/// `packet` packet to be destroyed
+@ffi.Native<ffi.Void Function(ffi.Pointer<ENetPacket>)>(
+  symbol: 'enet_packet_destroy',
+  assetId: assetId,
+)
+external void enet_packet_destroy(
+  ffi.Pointer<ENetPacket> packet,
+);
 
-  ///  Limits the maximum allowed channels of future incoming connections.
-  /// `host` host to limit
-  /// `channelLimit` the maximum number of channl
-  void enet_host_channel_limit(
-    ffi.Pointer<ENetHost> host,
-    int channelLimit,
-  ) {
-    return _enet_host_channel_limit(
-      host,
-      channelLimit,
-    );
-  }
+/// Attempts to resize the data in the packet to length specified in the
+/// `dataLength` parameter
+///
+/// `packet` packet to resize
+/// `dataLength` new size for the packet data
+///
+/// returns new packet pointer on success, null on failure.
+@ffi.Native<ffi.Pointer<ENetPacket> Function(ffi.Pointer<ENetPacket>, ffi.Size)>(
+  symbol: 'enet_packet_resize',
+  assetId: assetId,
+)
+external ffi.Pointer<ENetPacket> enet_packet_resize(
+  ffi.Pointer<ENetPacket> packet,
+  int dataLength,
+);
 
-  /// Queues a packet to be sent to all peers associated with the host.
-  ///
-  /// `host` host on which to broadcast the packet
-  /// `channelID` channel on which to broadcast
-  /// `packet` packet to broadcast
-  void enet_host_broadcast(
-    ffi.Pointer<ENetHost> host,
-    int channelID,
-    ffi.Pointer<ENetPacket> packet,
-  ) {
-    return _enet_host_broadcast(
-      host,
-      channelID,
-      packet,
-    );
-  }
+// =======================================================================//
+// !
+// ! PEER Functions
+// !
+// =======================================================================//
 
-  /* ENET PACKET FUNCTIONS */
+/// Queues a packet to be sent.
+///
+/// `peer` destination for the packet
+/// `channelID` channel on which to send
+/// `packet` packet to send
+///
+/// returns 0 on sucess
+/// returns < 0 on failure
+@ffi.Native<ffi.Int Function(ffi.Pointer<ENetPeer>, ffi.Uint8, ffi.Pointer<ENetPacket>)>(
+  symbol: 'enet_peer_send',
+  assetId: assetId,
+)
+external int enet_peer_send(
+  ffi.Pointer<ENetPeer> peer,
+  int channelID,
+  ffi.Pointer<ENetPacket> packet,
+);
 
-  /// Creates a packet that may be sent to a peer.
-  ///
-  /// `data` initial contents of the packet's data; the packet's data will remain uninitialized if data is NULL.
-  /// `dataLength` size of the data allocated for this packet
-  /// `flags` flags for this packet as described for the ENetPacket structure.
-  ///
-  /// returns the packet on success, null on failure.
-  ffi.Pointer<ENetPacket> enet_packet_create(
-    ffi.Pointer<ffi.Void> data,
-    int dataLength,
-    int flags,
-  ) {
-    return _enet_packet_create(
-      data,
-      dataLength,
-      flags,
-    );
-  }
-
-  /// Queues a packet to be sent.
-  ///
-  /// `peer` destination for the packet
-  /// `channelID` channel on which to send
-  /// `packet` packet to send
-  ///
-  /// returns 0 on sucess
-  /// returns < 0 on failure
-  int enet_peer_send(
-    ffi.Pointer<ENetPeer> peer,
-    int channelID,
-    ffi.Pointer<ENetPacket> packet,
-  ) {
-    return _enet_peer_send(
-      peer,
-      channelID,
-      packet,
-    );
-  }
-
-  /// Request a disconnection from a peer.
-  ///
-  /// `peer` peer to request a disconnection
-  /// `data` data describing the disconnection
-  /// An ENET_EVENT_DISCONNECT event will be generated by enet_host_service()
-  /// once the disconnection is complete.
-  void enet_peer_disconnect(
-    ffi.Pointer<ENetPeer> peer,
-    int data,
-  ) {
-    return _enet_peer_disconnect(
-      peer,
-      data,
-    );
-  }
-
-  /// Destroys the packet and deallocates its data.
-  /// `packet` packet to be destroyed
-  void enet_packet_destroy(
-    ffi.Pointer<ENetPacket> packet,
-  ) {
-    return _enet_packet_destroy(
-      packet,
-    );
-  }
-
-  /// Attempts to resize the data in the packet to length specified in the
-  /// `dataLength` parameter
-  ///
-  /// `packet` packet to resize
-  /// `dataLength` new size for the packet data
-  ///
-  /// returns new packet pointer on success, null on failure.
-  ffi.Pointer<ENetPacket> enet_packet_resize(
-    ffi.Pointer<ENetPacket> packet,
-    int dataLength,
-  ) {
-    return _enet_packet_resize(
-      packet,
-      dataLength,
-    );
-  }
-
-  // =======================================================================//
-  // !
-  // ! Bindings API
-  // !
-  // =======================================================================//
-
-  late final _enet_initializePtr = _lookup<ffi.NativeFunction<ffi.Int Function()>>('enet_initialize');
-  late final _enet_initialize = _enet_initializePtr.asFunction<int Function()>();
-
-  late final _enet_deinitializePtr = _lookup<ffi.NativeFunction<ffi.Void Function()>>('enet_deinitialize');
-  late final _enet_deinitialize = _enet_deinitializePtr.asFunction<void Function()>();
-
-  late final _enet_linked_versionPtr = _lookup<ffi.NativeFunction<ffi.Uint32 Function()>>('enet_linked_version');
-  late final _enet_linked_version = _enet_linked_versionPtr.asFunction<int Function()>();
-
-  late final _enet_time_getPtr = _lookup<ffi.NativeFunction<ffi.Uint32 Function()>>('enet_time_get');
-  late final _enet_time_get = _enet_time_getPtr.asFunction<int Function()>();
-
-  late final _enet_address_get_host_newPtr =
-      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Pointer<ENetAddress>, ffi.Pointer<ffi.Char>, ffi.Size)>>(
-          'enet_address_get_host_new');
-  late final _enet_address_get_host_new =
-      _enet_address_get_host_newPtr.asFunction<int Function(ffi.Pointer<ENetAddress>, ffi.Pointer<ffi.Char>, int)>();
-
-  late final _enet_address_set_host_oldPtr =
-      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Pointer<ENetAddress>, ffi.Pointer<ffi.Char>)>>(
-          'enet_address_set_host_old');
-  late final _enet_address_set_host_old =
-      _enet_address_set_host_oldPtr.asFunction<int Function(ffi.Pointer<ENetAddress>, ffi.Pointer<ffi.Char>)>();
-
-  /* ENET socket functions below */
-  /* ENET socket version end */
-
-  late final _enet_address_set_host_ip_newPtr =
-      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Pointer<ENetAddress>, ffi.Pointer<ffi.Char>)>>(
-          'enet_address_set_host_ip_old');
-  late final _enet_address_set_host_ip_new =
-      _enet_address_set_host_ip_newPtr.asFunction<int Function(ffi.Pointer<ENetAddress>, ffi.Pointer<ffi.Char>)>();
-
-  late final _enet_address_get_host_ip_newPtr =
-      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Pointer<ENetAddress>, ffi.Pointer<ffi.Char>, ffi.Size)>>(
-          'enet_address_get_host_ip_new');
-  late final _enet_address_get_host_ip_new =
-      _enet_address_get_host_ip_newPtr.asFunction<int Function(ffi.Pointer<ENetAddress>, ffi.Pointer<ffi.Char>, int)>();
-
-  late final _enet_host_createPtr = _lookup<
-      ffi.NativeFunction<
-          ffi.Pointer<ENetHost> Function(
-              ffi.Pointer<ENetAddress>, ffi.Size, ffi.Size, ffi.Uint32, ffi.Uint32)>>('enet_host_create');
-  late final _enet_host_create =
-      _enet_host_createPtr.asFunction<ffi.Pointer<ENetHost> Function(ffi.Pointer<ENetAddress>, int, int, int, int)>();
-
-  late final _enet_host_connectPtr = _lookup<
-      ffi.NativeFunction<
-          ffi.Pointer<ENetPeer> Function(
-              ffi.Pointer<ENetHost>, ffi.Pointer<ENetAddress>, ffi.Size, ffi.Uint32)>>('enet_host_connect');
-  late final _enet_host_connect = _enet_host_connectPtr
-      .asFunction<ffi.Pointer<ENetPeer> Function(ffi.Pointer<ENetHost>, ffi.Pointer<ENetAddress>, int, int)>();
-
-  late final _enet_host_servicePtr =
-      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Pointer<ENetHost>, ffi.Pointer<ENetEvent>, ffi.Uint32)>>(
-          'enet_host_service');
-  late final _enet_host_service =
-      _enet_host_servicePtr.asFunction<int Function(ffi.Pointer<ENetHost>, ffi.Pointer<ENetEvent>, int)>();
-
-  late final _enet_packet_createPtr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<ENetPacket> Function(ffi.Pointer<ffi.Void>, ffi.Size, ffi.Uint32)>>(
-          'enet_packet_create');
-  late final _enet_packet_create =
-      _enet_packet_createPtr.asFunction<ffi.Pointer<ENetPacket> Function(ffi.Pointer<ffi.Void>, int, int)>();
-
-  late final _enet_host_destroyPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ENetHost>)>>('enet_host_destroy');
-  late final _enet_host_destroy = _enet_host_destroyPtr.asFunction<void Function(ffi.Pointer<ENetHost>)>();
-
-  late final _enet_peer_sendPtr =
-      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Pointer<ENetPeer>, ffi.Uint8, ffi.Pointer<ENetPacket>)>>(
-          'enet_peer_send');
-  late final _enet_peer_send =
-      _enet_peer_sendPtr.asFunction<int Function(ffi.Pointer<ENetPeer>, int, ffi.Pointer<ENetPacket>)>();
-
-  late final _enet_peer_disconnectPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ENetPeer>, ffi.Uint32)>>('enet_peer_disconnect');
-  late final _enet_peer_disconnect = _enet_peer_disconnectPtr.asFunction<void Function(ffi.Pointer<ENetPeer>, int)>();
-
-  late final _enet_host_flushPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ENetHost>)>>('enet_host_flush');
-  late final _enet_host_flush = _enet_host_flushPtr.asFunction<void Function(ffi.Pointer<ENetHost>)>();
-
-  late final _enet_packet_destroyPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ENetPacket>)>>('enet_packet_destroy');
-  late final _enet_packet_destroy = _enet_packet_destroyPtr.asFunction<void Function(ffi.Pointer<ENetPacket>)>();
-
-  late final _enet_host_broadcastPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ENetHost>, ffi.Uint8, ffi.Pointer<ENetPacket>)>>(
-          'enet_host_broadcast');
-  late final _enet_host_broadcast =
-      _enet_host_broadcastPtr.asFunction<void Function(ffi.Pointer<ENetHost>, int, ffi.Pointer<ENetPacket>)>();
-
-  late final _enet_host_bandwidth_limitPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ENetHost>, ffi.Uint32, ffi.Uint32)>>(
-          'enet_host_bandwidth_limit');
-  late final _enet_host_bandwidth_limit =
-      _enet_host_bandwidth_limitPtr.asFunction<void Function(ffi.Pointer<ENetHost>, int, int)>();
-
-  late final _enet_host_bandwidth_throttlePtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ENetHost>)>>('enet_host_bandwidth_throttle');
-  late final _enet_host_bandwidth_throttle =
-      _enet_host_bandwidth_throttlePtr.asFunction<void Function(ffi.Pointer<ENetHost>)>();
-
-  late final _enet_host_channel_limitPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ENetHost>, ffi.Size)>>('enet_host_channel_limit');
-  late final _enet_host_channel_limit =
-      _enet_host_channel_limitPtr.asFunction<void Function(ffi.Pointer<ENetHost>, int)>();
-
-  late final _enet_packet_resizePtr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<ENetPacket> Function(ffi.Pointer<ENetPacket>, ffi.Size)>>(
-          'enet_packet_resize');
-  late final _enet_packet_resize =
-      _enet_packet_resizePtr.asFunction<ffi.Pointer<ENetPacket> Function(ffi.Pointer<ENetPacket>, int)>();
-}
+/// Request a disconnection from a peer.
+///
+/// `peer` peer to request a disconnection
+/// `data` data describing the disconnection
+/// An ENET_EVENT_DISCONNECT event will be generated by enet_host_service()
+/// once the disconnection is complete.
+@ffi.Native<ffi.Void Function(ffi.Pointer<ENetPeer>, ffi.Uint32)>(
+  symbol: 'enet_peer_disconnect',
+  assetId: assetId,
+)
+external void enet_peer_disconnect(
+  ffi.Pointer<ENetPeer> peer,
+  int data,
+);
 
 // =======================================================================//
 // !

@@ -4,17 +4,14 @@ import 'dart:isolate';
 
 import 'package:enet/enet.dart';
 import 'package:enet/src/bindings/enet_bindings.dart' as bindings;
-import 'package:enet/src/bindings/lib_enet.dart';
 import 'package:enet/src/enet_exception.dart';
 import 'package:ffi/ffi.dart';
-
-final _instance = LibENet.instance;
 
 final class ENetHost implements Finalizable {
   late Pointer<bindings.ENetHost> _host;
 
   static final Finalizer<Pointer<bindings.ENetHost>> _finalizer = Finalizer((pointer) {
-    _instance.enet_host_destroy(pointer);
+    bindings.enet_host_destroy(pointer);
   });
 
   final ENetAddress? address;
@@ -34,7 +31,7 @@ final class ENetHost implements Finalizable {
     this.incomingBandwidth = 0,
     this.outgoingBandwidth = 0,
   }) {
-    _host = _instance.enet_host_create(
+    _host = bindings.enet_host_create(
       address?.pointer ?? nullptr,
       peerCount,
       channelLimit,
@@ -50,7 +47,7 @@ final class ENetHost implements Finalizable {
   }
 
   ENetPeer connect(ENetAddress address, int channelCount, {int data = 0}) {
-    Pointer<bindings.ENetPeer> cPeer = _instance.enet_host_connect(
+    Pointer<bindings.ENetPeer> cPeer = bindings.enet_host_connect(
       _host,
       address.pointer,
       channelCount,
@@ -77,7 +74,7 @@ final class ENetHost implements Finalizable {
         await Isolate.spawn(_serviceIsolated, [receivePort.sendPort, _host, cEvent, timeout]);
         res = await receivePort.first;
       } else {
-        res = _instance.enet_host_service(_host, cEvent, timeout);
+        res = bindings.enet_host_service(_host, cEvent, timeout);
       }
 
       if (res < 0) {
@@ -90,20 +87,20 @@ final class ENetHost implements Finalizable {
     }
   }
 
-  void flush() => _instance.enet_host_flush(_host);
+  void flush() => bindings.enet_host_flush(_host);
 
   void broadcast(int channelID, ENetPacket packet) {
     packet.done();
-    _instance.enet_host_broadcast(_host, channelID, packet.pointer);
+    // bindings.enet_host_broadcast(_host, channelID, packet.pointer);
   }
 }
 
 void _serviceIsolated(List<dynamic> arg) async {
-  final port = arg[0] as SendPort;
-  final host = arg[1] as Pointer<bindings.ENetHost>;
-  final event = arg[2] as Pointer<bindings.ENetEvent>;
-  final timeout = arg[3] as int;
+  final SendPort port = arg[0] as SendPort;
+  final Pointer<bindings.ENetHost> host = arg[1] as Pointer<bindings.ENetHost>;
+  final Pointer<bindings.ENetEvent> event = arg[2] as Pointer<bindings.ENetEvent>;
+  final int timeout = arg[3] as int;
 
-  final res = _instance.enet_host_service(host, event, timeout);
+  final res = bindings.enet_host_service(host, event, timeout);
   port.send(res);
 }

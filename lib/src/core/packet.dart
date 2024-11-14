@@ -4,10 +4,7 @@ import 'dart:typed_data';
 import 'package:enet/enet.dart';
 import 'package:ffi/ffi.dart';
 
-import 'package:enet/src/bindings/lib_enet.dart';
 import 'package:enet/src/bindings/enet_bindings.dart' as bindings;
-
-final _instance = LibENet.instance;
 
 class ENetPacket implements Finalizable {
   late Pointer<bindings.ENetPacket> _packet;
@@ -16,7 +13,7 @@ class ENetPacket implements Finalizable {
   final ENetPacketFlag flags;
 
   static final Finalizer<Pointer<bindings.ENetPacket>> _finalizer = Finalizer((pointer) {
-    _instance.enet_packet_destroy(pointer);
+    bindings.enet_packet_destroy(pointer);
   });
 
   ENetPacket._init(this.data, this.flags) {
@@ -36,7 +33,6 @@ class ENetPacket implements Finalizable {
           (element) => element.value == packet.ref.flags,
         ) */
   {
-    print(packet.ref.flags);
     _finalizer.attach(this, _packet.cast(), detach: this);
   }
 
@@ -46,14 +42,14 @@ class ENetPacket implements Finalizable {
 
   void destroy() {
     _finalizer.detach(this);
-    _instance.enet_packet_destroy(_packet);
+    bindings.enet_packet_destroy(_packet);
   }
 
   Pointer<bindings.ENetPacket> _createPacket() {
     final Pointer<Uint8> _data = malloc<Uint8>(data.length);
     _data.asTypedList(data.length).setAll(0, data);
     try {
-      var _packet = _instance.enet_packet_create(
+      var _packet = bindings.enet_packet_create(
         _data.cast(),
         data.length,
         flags.value,

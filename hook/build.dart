@@ -1,5 +1,6 @@
-import 'package:native_toolchain_c/native_toolchain_c.dart';
+import 'package:logging/logging.dart';
 import 'package:native_assets_cli/native_assets_cli.dart';
+import 'package:native_toolchain_c/native_toolchain_c.dart';
 
 void main(List<String> args) async {
   await build(
@@ -7,24 +8,33 @@ void main(List<String> args) async {
     (config, output) async {
       final packageName = config.packageName;
 
+      final logger = Logger("")
+        ..level = Level.ALL
+        ..onRecord.listen(
+          (record) => print(record.message),
+        );
+
+      if (!config.dryRun) {
+        logger.info("Building ENet for ${config.targetOS} in mode ${config.buildMode.name}");
+      }
+
       final flags = <String>[];
       final defines = <String, String>{};
 
-      if (config.buildMode.name == 'debug') {
-        defines['ENET_DEBUG'] = '1';
+      if (!config.dryRun && config.buildMode == BuildMode.debug) {
+        defines['ENET_DEBUG'];
       }
 
       if (config.targetOS == OS.windows) {
         flags.add('/W3'); // Equivalent to MSVC /W3 warning level
-        defines['DART_SHARED_LIB'] = '1';
-        defines['ENET_DLL'] = '1';
+        defines['ENET_DLL'] = '0';
       } else if (config.targetOS == OS.linux) {
         flags.add('-Wall'); // Common flag for Linux GCC/Clang compilers
       }
 
       final cbuilder = CBuilder.library(
         name: packageName,
-        assetName: 'lib/$packageName.dart',
+        assetName: '$packageName.dart',
         flags: flags,
         defines: defines,
         language: Language.c,
@@ -36,7 +46,7 @@ void main(List<String> args) async {
       await cbuilder.run(
         config: config,
         output: output,
-        logger: null,
+        logger: logger,
       );
     },
   );
