@@ -1,0 +1,69 @@
+name: Dart CI
+
+on:
+  push:
+    branches:
+      - master
+      - 'feature/*'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Set up Dart SDK (using beta channel, change to stable or other versions if needed)
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: beta
+
+      # Install required build tools (GCC, Clang, Make)
+      - name: Install build tools (Clang, GCC, Make)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang gcc make
+
+      # Cache Dart dependencies to speed up builds
+      - name: Cache Dart dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-dart-${{ hashFiles('**/pubspec.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-dart-
+
+      # Install Dart project dependencies
+      - name: Install dependencies
+        run: dart pub get
+
+      # Format Dart code (check formatting)
+      - name: Format Dart code
+        run: dart format .
+
+      # Lint Dart code (run analysis)
+      - name: Run Dart analyzer
+        run: dart analyze
+
+      # Run Dart tests
+      - name: Run Dart tests
+        run: dart --enable-experiment=native-assets test
+
+      # Generate and upload code coverage (requires coverage package)
+      #- name: Generate code coverage
+      #  run: |
+      #    dart --enable-experiment=native-assets run test --coverage=coverage/
+      #    bash <(curl -s https://codecov.io/bash)  
+
+      # Optional: Upload test results (for further analysis or debugging)
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: dart-test-results
+          path: test/test_results/

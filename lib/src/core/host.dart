@@ -87,6 +87,8 @@ final class ENetHost implements Finalizable {
     }
   }
 
+  void destroy() => bindings.enet_host_destroy(_host);
+
   void flush() => bindings.enet_host_flush(_host);
 
   void broadcast(int channelID, ENetPacket packet) {
