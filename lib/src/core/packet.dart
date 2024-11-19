@@ -21,18 +21,20 @@ class ENetPacket implements Finalizable {
     _finalizer.attach(this, _packet.cast(), detach: this);
   }
 
-  factory ENetPacket.create({required Uint8List data, required ENetPacketFlag flags}) {
+  factory ENetPacket.create({
+    required Uint8List data,
+    ENetPacketFlag flags = ENetPacketFlag.none,
+  }) {
     return ENetPacket._init(data, flags);
   }
 
   ENetPacket.parse(Pointer<bindings.ENetPacket> packet)
       : _packet = packet,
         data = _extractDataFromPointer(packet),
-        flags = ENetPacketFlag
-            .sent /* ENetPacketFlag.values.singleWhere(
-          (element) => element.value == packet.ref.flags,
-        ) */
-  {
+        flags = ENetPacketFlag.values.singleWhere(
+          (e) => e.value == packet.ref.flags,
+          orElse: () => ENetPacketFlag.none,
+        ) {
     _finalizer.attach(this, _packet.cast(), detach: this);
   }
 

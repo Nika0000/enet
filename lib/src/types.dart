@@ -2,7 +2,15 @@
 
 // General enums
 
-const ENET_MAX_HOST_NAME = 257;
+const int ENET_MAX_HOST_NAME = 257;
+
+const int ENET_PEER_PACKET_THROTTLE_INTERVAL = 500;
+const int ENET_PEER_PACKET_THROTTLE_ACCELERATION = 2;
+const int ENET_PEER_PACKET_THROTTLE_DECELERATION = 2;
+
+const int ENET_PEER_TIMEOUT_LIMIT = 0;
+const int ENET_PEER_TIMEOUT_MINIMUM = 0;
+const int ENET_PEER_TIMEOUT_MAXIMUM = 0;
 
 /// An ENet event type, as specified in [ENetEvent].
 enum ENetEventType {
@@ -38,6 +46,8 @@ enum ENetEventType {
 /// host byte-order. The `InternetAddress.anyIPv4` may be used to specify the
 /// default server host.
 enum ENetPacketFlag {
+  none(0),
+
   /// packet must be received by the target peer and resend attempts should be
   /// made until the packet is delivered
   reliable(1),
