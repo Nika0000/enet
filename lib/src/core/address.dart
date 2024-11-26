@@ -7,23 +7,16 @@ import 'package:enet/src/enet_exception.dart';
 import 'package:enet/src/types.dart';
 import 'package:ffi/ffi.dart';
 
+/// {@template enet_address}
+///
 /// Represents a network address used within the ENet library.
+///
+/// - [host] An [InternetAddress] representing the hostname.
+/// - [port] An integer representing the port number.
+///
+/// {@endtemplate}
 final class ENetAddress implements Finalizable {
-  /// Creates a new ENet address.
-  ///
-  /// `host`: An optional [InternetAddress] representing the hostname.
-  /// `port`: An optional integer representing the port number.
-  ///
-  /// Internally, this constructor allocates native memory for the ENet address
-  /// and attaches a finalizer to manage its lifecycle.
-  ///
-  /// **Example**:
-  /// ```dart
-  /// var address = ENetAddress(
-  ///   host: InternetAddress('127.0.0.1'),
-  ///   port: 12345,
-  /// );
-  /// ```
+  /// {@macro enet_address}
   ENetAddress({InternetAddress? host, int? port}) {
     _address = calloc<bindings.ENetAddress>();
 
@@ -31,24 +24,24 @@ final class ENetAddress implements Finalizable {
       setHost(host);
     }
 
-    port != null ? this.port = port : null;
+    if (port != null) {
+      this.port = port;
+    }
 
     _finalizer.attach(this, _address.cast(), detach: this);
   }
 
-  /// Creates an ENet address instance by parsing an existing [bindings.ENetAddress].
+  /// Creates an [ENetAddress] instance by parsing an
+  /// existing [bindings.ENetAddress]
   ///
-  /// `address`: A [bindings.ENetAddress] representing the existing native ENet
+  /// [address] - A [bindings.ENetAddress] representing the existing native ENet
   /// address to be parsed and copied into the new instance.
   ///
-  /// Note:
+  /// **Note**:
   /// - The provided [address] is not retained but its values are copied.
   /// Modifying the original [address] will not affect the parsed instance.
   /// - The lifecycle of the allocated memory is managed automatically, ensuring
-  ///   proper cleanup when the instance is no longer in use.
-  ///
-  /// **Throws**:
-  /// - [StateError] if memory allocation fails.
+  /// proper cleanup when the instance is no longer in use.
   ENetAddress.parse(bindings.ENetAddress address) {
     _address = calloc<bindings.ENetAddress>();
     _finalizer.attach(this, _address.cast(), detach: this);
@@ -76,22 +69,29 @@ final class ENetAddress implements Finalizable {
   ///   print('Failed to retrieve host: $e');
   /// }
   /// ```
-  ///
-  /// **Throws**:
-  /// - [ENetException] if failed to get host or ip.
   Future<InternetAddress> get host async {
     final cHost = calloc<Char>(ENET_MAX_HOST_NAME);
     final cIp = calloc<Char>(ENET_MAX_HOST_NAME);
 
     try {
-      final host = bindings.enet_address_get_host_new(_address, cHost, ENET_MAX_HOST_NAME);
-      final ip = bindings.enet_address_get_host_ip_new(_address, cIp, ENET_MAX_HOST_NAME);
+      final host = bindings.enet_address_get_host_new(
+        _address,
+        cHost,
+        ENET_MAX_HOST_NAME,
+      );
+      final ip = bindings.enet_address_get_host_ip_new(
+        _address,
+        cIp,
+        ENET_MAX_HOST_NAME,
+      );
 
       if (host < 0 || ip < 0) {
         throw const ENetException('Failed to get enet host or ip.');
       }
 
-      final lookup = await InternetAddress.lookup(cHost.cast<Utf8>().toDartString());
+      final lookup = await InternetAddress.lookup(
+        cHost.cast<Utf8>().toDartString(),
+      );
 
       final address = lookup.singleWhere(
         (addr) => addr.address == cIp.cast<Utf8>().toDartString(),
@@ -108,9 +108,9 @@ final class ENetAddress implements Finalizable {
   /// Resolves the given hostname and assigns it to the `host` field
   /// of the ENet address.
   ///
-  /// **Note**: This operation depends on the system's DNS resolution capabilities.
+  /// [hostName] - The instance representing the hostname to resolve.
   ///
-  /// `hostName`: The instance representing the hostname to resolve.
+  /// Note: This operation depends on the system's DNS resolution capabilities.
   ///
   /// **Example**:
   /// ```dart

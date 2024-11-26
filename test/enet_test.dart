@@ -4,38 +4,53 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:enet/enet.dart';
+import 'package:enet/src/bindings/enet_bindings.dart' as bindings;
 import 'package:ffi/ffi.dart';
 import 'package:test/test.dart';
-
-import 'package:enet/src/bindings/enet_bindings.dart' as bindings;
 
 void main() {
   group('ENet Bindings Test', () {
     test('Initialize ENet', () {
       final result = bindings.enet_initialize();
-      expect(result, equals(0), reason: 'ENet should initialize successfully.');
+      expect(
+        result,
+        equals(0),
+        reason: 'ENet should initialize successfully.',
+      );
     });
 
     test('Get ENet Linked Version', () {
       final version = bindings.enet_linked_version();
-      expect(version, greaterThan(0), reason: 'Linked version should be non-zero.');
+      expect(
+        version,
+        greaterThan(0),
+        reason: 'Linked version should be non-zero.',
+      );
     });
 
     test('Get ENet Time', () {
       final time = bindings.enet_time_get();
-      expect(time, greaterThanOrEqualTo(0), reason: 'Time should be a non-negative integer.');
+      expect(
+        time,
+        greaterThanOrEqualTo(0),
+        reason: 'Time should be a non-negative integer.',
+      );
     });
 
     test('Deinitialize ENet', () {
       // Deinitializing ENet should not throw an exception.
-      expect(() => bindings.enet_deinitialize(), returnsNormally, reason: 'ENet should deinitialize without error.');
+      expect(
+        bindings.enet_deinitialize,
+        returnsNormally,
+        reason: 'ENet should deinitialize without error.',
+      );
     });
   });
 
   group('ENet Address Bindings Test', () {
     late ffi.Pointer<bindings.ENetAddress> address;
     late ffi.Pointer<ffi.Char> hostNameBuffer;
-    const int bufferSize = 256;
+    const bufferSize = 256;
 
     setUp(() {
       address = calloc<bindings.ENetAddress>();
@@ -44,12 +59,17 @@ void main() {
 
     tearDown(() {
       // Free allocated memory.
-      calloc.free(address);
-      calloc.free(hostNameBuffer);
+      calloc
+        ..free(address)
+        ..free(hostNameBuffer);
     });
 
     test('Get Host Name from Address', () {
-      final result = bindings.enet_address_get_host_new(address, hostNameBuffer, bufferSize);
+      final result = bindings.enet_address_get_host_new(
+        address,
+        hostNameBuffer,
+        bufferSize,
+      );
       expect(result, equals(0), reason: 'Should successfully get host name.');
 
       final hostName = hostNameBuffer.cast<Utf8>().toDartString();
@@ -57,27 +77,37 @@ void main() {
     });
 
     test('Set Host Name to Address', () {
-      final hostName = 'example.com';
+      const hostName = 'example.com';
       final hostNamePtr = hostName.toNativeUtf8();
 
-      final result = bindings.enet_address_set_host(address, hostNamePtr.cast<ffi.Char>());
+      final result = bindings.enet_address_set_host(
+        address,
+        hostNamePtr.cast<ffi.Char>(),
+      );
       expect(result, equals(0), reason: 'Should successfully set host name.');
 
       calloc.free(hostNamePtr);
     });
 
     test('Set Host IP to Address', () {
-      final hostIP = '127.0.0.1';
+      const hostIP = '127.0.0.1';
       final hostIPPtr = hostIP.toNativeUtf8();
 
-      //final result = bindings.enet_address_set_host_ip(address, hostIPPtr.cast<ffi.Char>());
-     // expect(result, equals(0), reason: 'Should successfully set host IP.');
+      /*  final result = bindings.enet_address_set_host_ip(
+        address,
+        hostIPPtr.cast<ffi.Char>(),
+      );
+    expect(result, equals(0), reason: 'Should successfully set host IP.'); */
 
       calloc.free(hostIPPtr);
     });
 
     test('Get Host IP from Address', () {
-      final result = bindings.enet_address_get_host_ip_new(address, hostNameBuffer, bufferSize);
+      final result = bindings.enet_address_get_host_ip_new(
+        address,
+        hostNameBuffer,
+        bufferSize,
+      );
       expect(result, equals(0), reason: 'Should successfully get host IP.');
 
       final hostIP = hostNameBuffer.cast<Utf8>().toDartString();
@@ -98,20 +128,37 @@ void main() {
 
     tearDown(() {
       // Free allocated memory.
-      calloc.free(address);
-      calloc.free(event);
+      calloc
+        ..free(address)
+        ..free(event);
     });
 
     test('Create Host', () {
-      host = bindings.enet_host_create(address, 32, 2, 1024 * 1024, 1024 * 1024);
-      expect(host, isNot(ffi.nullptr), reason: 'Host creation should succeed.');
+      host = bindings.enet_host_create(
+        address,
+        32,
+        2,
+        1024 * 1024,
+        1024 * 1024,
+      );
+      expect(
+        host,
+        isNot(ffi.nullptr),
+        reason: 'Host creation should succeed.',
+      );
 
       // Destroy host after test.
       bindings.enet_host_destroy(host);
     });
 
     test('Connect to Host', () {
-      host = bindings.enet_host_create(ffi.nullptr, 32, 2, 1024 * 1024, 1024 * 1024);
+      host = bindings.enet_host_create(
+        ffi.nullptr,
+        32,
+        2,
+        1024 * 1024,
+        1024 * 1024,
+      );
       expect(host, isNot(ffi.nullptr), reason: 'Host creation should succeed.');
 
       // Setup a dummy address for testing.
@@ -123,14 +170,24 @@ void main() {
       calloc.free(ip);
 
       final peer = bindings.enet_host_connect(host, address, 2, 0);
-      expect(peer, isNot(ffi.nullptr), reason: 'Host connection should succeed.');
+      expect(
+        peer,
+        isNot(ffi.nullptr),
+        reason: 'Host connection should succeed.',
+      );
 
       // Destroy host after test.
       bindings.enet_host_destroy(host);
     });
 
     test('Host Service', () {
-      host = bindings.enet_host_create(ffi.nullptr, 32, 2, 1024 * 1024, 1024 * 1024);
+      host = bindings.enet_host_create(
+        ffi.nullptr,
+        32,
+        2,
+        1024 * 1024,
+        1024 * 1024,
+      );
       expect(host, isNot(ffi.nullptr), reason: 'Host creation should succeed.');
 
       address.ref.port = 12345;
@@ -139,39 +196,66 @@ void main() {
       calloc.free(ip);
 
       final peer = bindings.enet_host_connect(host, address, 2, 0);
-      expect(peer, isNot(ffi.nullptr), reason: 'Host connection should succeed.');
+      expect(
+        peer,
+        isNot(ffi.nullptr),
+        reason: 'Host connection should succeed.',
+      );
 
       // Simulate events by calling enet_host_service.
-      int result = -1;
+      var result = -1;
       do {
         result = bindings.enet_host_service(host, event, 100);
       } while (result < 0);
 
       // Allow valid results: no event (0) or successful event (> 0).
-      expect(result, anyOf(equals(0), greaterThan(0)), reason: 'Service call should complete successfully.');
+      expect(
+        result,
+        anyOf(equals(0), greaterThan(0)),
+        reason: 'Service call should complete successfully.',
+      );
 
       // Step 5: Destroy host after test.
       bindings.enet_host_destroy(host);
     });
 
     test('Flush Host', () {
-      host = bindings.enet_host_create(ffi.nullptr, 32, 2, 1024 * 1024, 1024 * 1024);
+      host = bindings.enet_host_create(
+        ffi.nullptr,
+        32,
+        2,
+        1024 * 1024,
+        1024 * 1024,
+      );
       expect(host, isNot(ffi.nullptr), reason: 'Host creation should succeed.');
 
       // Flush the host to ensure queued packets are sent.
-      expect(() => bindings.enet_host_flush(host), returnsNormally, reason: 'Flushing host should not throw an error.');
+      expect(
+        () => bindings.enet_host_flush(host),
+        returnsNormally,
+        reason: 'Flushing host should not throw an error.',
+      );
 
       // Destroy host after test.
       bindings.enet_host_destroy(host);
     });
 
     test('Adjust Bandwidth Limit', () {
-      host = bindings.enet_host_create(ffi.nullptr, 32, 2, 1024 * 1024, 1024 * 1024);
+      host = bindings.enet_host_create(
+        ffi.nullptr,
+        32,
+        2,
+        1024 * 1024,
+        1024 * 1024,
+      );
       expect(host, isNot(ffi.nullptr), reason: 'Host creation should succeed.');
 
       // Adjust bandwidth limits and expect no errors.
-      expect(() => bindings.enet_host_bandwidth_limit(host, 512 * 1024, 512 * 1024), returnsNormally,
-          reason: 'Adjusting bandwidth limits should not throw an error.');
+      expect(
+        () => bindings.enet_host_bandwidth_limit(host, 512 * 1024, 512 * 1024),
+        returnsNormally,
+        reason: 'Adjusting bandwidth limits should not throw an error.',
+      );
 
       // Destroy host after test.
       bindings.enet_host_destroy(host);
@@ -196,7 +280,11 @@ void main() {
 
       // Create the packet.
       packet = bindings.enet_packet_create(dataPointer.cast(), data.length, 0);
-      expect(packet, isNot(ffi.nullptr), reason: 'Packet creation should succeed.');
+      expect(
+        packet,
+        isNot(ffi.nullptr),
+        reason: 'Packet creation should succeed.',
+      );
 
       // Verify packet contents (if available in your implementation).
       calloc.free(dataPointer);
@@ -205,11 +293,19 @@ void main() {
     test('Resize Packet', () {
       // Create an initial packet.
       packet = bindings.enet_packet_create(ffi.nullptr, 10, 0);
-      expect(packet, isNot(ffi.nullptr), reason: 'Packet creation should succeed.');
+      expect(
+        packet,
+        isNot(ffi.nullptr),
+        reason: 'Packet creation should succeed.',
+      );
 
       // Resize the packet.
       final resizedPacket = bindings.enet_packet_resize(packet, 20);
-      expect(resizedPacket, isNot(ffi.nullptr), reason: 'Packet resize should succeed.');
+      expect(
+        resizedPacket,
+        isNot(ffi.nullptr),
+        reason: 'Packet resize should succeed.',
+      );
 
       // Update the pointer if resize succeeded.
       packet = resizedPacket;
@@ -218,11 +314,18 @@ void main() {
     test('Destroy Packet', () {
       // Create a packet to destroy.
       packet = bindings.enet_packet_create(ffi.nullptr, 10, 0);
-      expect(packet, isNot(ffi.nullptr), reason: 'Packet creation should succeed.');
+      expect(
+        packet,
+        isNot(ffi.nullptr),
+        reason: 'Packet creation should succeed.',
+      );
 
       // Destroy the packet and verify it doesn't throw errors.
-      expect(() => bindings.enet_packet_destroy(packet), returnsNormally,
-          reason: 'Destroying a packet should not throw errors.');
+      expect(
+        () => bindings.enet_packet_destroy(packet),
+        returnsNormally,
+        reason: 'Destroying a packet should not throw errors.',
+      );
 
       // Reset pointer to nullptr to avoid double-free.
       packet = ffi.nullptr;
@@ -239,7 +342,13 @@ void main() {
 
     setUp(() {
       // Create host for testing.
-      host = bindings.enet_host_create(ffi.nullptr, 32, 2, 1024 * 1024, 1024 * 1024);
+      host = bindings.enet_host_create(
+        ffi.nullptr,
+        32,
+        2,
+        1024 * 1024,
+        1024 * 1024,
+      );
       expect(host, isNot(ffi.nullptr), reason: 'Host creation should succeed.');
 
       // Set up peer address and connect.
@@ -249,7 +358,11 @@ void main() {
       calloc.free(ip);
 
       peer = bindings.enet_host_connect(host, address, 2, 0);
-      expect(peer, isNot(ffi.nullptr), reason: 'Host connection should succeed.');
+      expect(
+        peer,
+        isNot(ffi.nullptr),
+        reason: 'Host connection should succeed.',
+      );
 
       // Simulate connection completion.
       bindings.enet_host_service(host, event, 100);
@@ -266,8 +379,9 @@ void main() {
       if (packet != ffi.nullptr) {
         bindings.enet_packet_destroy(packet);
       }
-      calloc.free(address);
-      calloc.free(event);
+      calloc
+        ..free(address)
+        ..free(event);
     });
 
     test('Send Packet to Peer', () {
@@ -278,19 +392,27 @@ void main() {
 
       packet = bindings.enet_packet_create(dataPointer.cast(), data.length, 0);
       calloc.free(dataPointer);
-      expect(packet, isNot(ffi.nullptr), reason: 'Packet creation should succeed.');
+      expect(
+        packet,
+        isNot(ffi.nullptr),
+        reason: 'Packet creation should succeed.',
+      );
 
       //  final result = bindings.enet_peer_send(peer, 0, packet);
       //  expect(result, equals(0), reason: 'Packet sending should succeed.');
     });
-
-    /*   test('Disconnect Peer', () {
+/* 
+    test('Disconnect Peer', () {
       // Disconnect the peer.
       bindings.enet_peer_disconnect(peer, 0);
 
       //Wait for the disconnection to complete.
       final result = bindings.enet_host_service(host, event, 100);
-      expect(result, greaterThanOrEqualTo(0), reason: 'Disconnection event should be handled.');
+      expect(
+        result,
+        greaterThanOrEqualTo(0),
+        reason: 'Disconnection event should be handled.',
+      );
     }); */
   });
 
@@ -332,23 +454,32 @@ void main() {
         peerCount: 1,
         channelLimit: 1,
       );
-      expect(client, isNotNull, reason: 'Client creation should not return null.');
+      expect(
+        client,
+        isNotNull,
+        reason: 'Client creation should not return null.',
+      );
 
       // Connect the client to the host
       final peer = client.connect(
         ENetAddress(host: InternetAddress.loopbackIPv4, port: 7777),
         1,
       );
-      expect(peer, isNotNull, reason: 'Client should connect to the host.');
+      expect(
+        peer,
+        isNotNull,
+        reason: 'Client should connect to the host.',
+      );
 
-      bool hostConnected = false;
-      bool clientConnected = false;
+      var hostConnected = false;
+      var clientConnected = false;
 
-      String testMessage = 'Hello from client!';
-      bool messageReceivedByHost = false;
+      const testMessage = 'Hello from client!';
+      var messageReceivedByHost = false;
 
-      // Service events on both sides to establish connection and exchange messages
-      for (int i = 0; i < 100; i++) {
+      // Service events on both sides to establish connection and
+      //exchange messages
+      for (var i = 0; i < 100; i++) {
         // Process host events
         final hostEvent = await host.service();
         if (hostEvent.type == ENetEventType.connect) {
@@ -380,8 +511,16 @@ void main() {
       }
 
       // Verify connection and message exchange
-      expect(hostConnected, isTrue, reason: 'Host should detect client connection.');
-      expect(clientConnected, isTrue, reason: 'Client should detect connection to the host.');
+      expect(
+        hostConnected,
+        isTrue,
+        reason: 'Host should detect client connection.',
+      );
+      expect(
+        clientConnected,
+        isTrue,
+        reason: 'Client should detect connection to the host.',
+      );
       expect(
         messageReceivedByHost,
         isTrue,
@@ -407,7 +546,11 @@ void main() {
         peerCount: 1,
         channelLimit: 1,
       );
-      expect(client, isNotNull, reason: 'Client creation should not return null.');
+      expect(
+        client,
+        isNotNull,
+        reason: 'Client creation should not return null.',
+      );
 
       // Connect the client to the host
       final peer = client.connect(
@@ -416,11 +559,11 @@ void main() {
       );
       expect(peer, isNotNull, reason: 'Client should connect to the host.');
 
-      bool disconnectDetected = false;
+      var disconnectDetected = false;
 
       // Wait and process events on the host side
-      for (int i = 0; i < 100; i++) {
-        client.service(timeout: 0);
+      for (var i = 0; i < 100; i++) {
+        await client.service();
         final hostEvent = await host.service();
         if (hostEvent.type == ENetEventType.connect) {
           peer.disconnect();

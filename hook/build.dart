@@ -8,21 +8,24 @@ void main(List<String> args) async {
     (config, output) async {
       final packageName = config.packageName;
 
-      final logger = Logger("")
+      final logger = Logger('')
         ..level = Level.ALL
         ..onRecord.listen(
           (record) => print(record.message),
         );
 
       if (!config.dryRun) {
-        logger.info("Building ENet for ${config.targetOS} in mode ${config.buildMode.name}");
+        logger.info(
+          'Building ENet for ${config.targetOS} '
+          'in mode ${config.buildMode.name}',
+        );
       }
 
       final flags = <String>[];
       final defines = <String, String>{};
 
       if (!config.dryRun && config.buildMode == BuildMode.debug) {
-        defines['ENET_DEBUG'];
+        defines['ENET_DEBUG'] = '1';
       }
 
       if (config.targetOS == OS.windows) {
@@ -37,7 +40,6 @@ void main(List<String> args) async {
         assetName: '$packageName.dart',
         flags: flags,
         defines: defines,
-        language: Language.c,
         sources: [
           'src/$packageName.c',
         ],
