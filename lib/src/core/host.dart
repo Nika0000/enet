@@ -101,37 +101,126 @@ final class ENetHost implements Finalizable {
   /// **Note**:
   /// [service] should be called fairly reguraly for adequate performance.
   Future<ENetEvent> service({int timeout = 0}) async {
-    final cEvent = malloc<bindings.ENetEvent>();
-    var res = 0;
+    late Isolate isolate;
+    late Pointer<bindings.ENetEvent> cEvent;
+    var err = 0;
 
     try {
-      if (timeout > 0) {
-        final receivePort = ReceivePort();
+      final receivePort = ReceivePort();
 
-        await Isolate.spawn(_serviceIsolated, [
+      isolate = await Isolate.spawn(
+        _serviceIsolated,
+        [
           receivePort.sendPort,
           _host,
-          cEvent,
           timeout,
-        ]);
+          false,
+        ],
+        paused: false,
+      );
 
-        res = await receivePort.first as int;
-      } else {
-        res = bindings.enet_host_service(_host, cEvent, timeout);
-      }
+      final res = await receivePort.first as List;
 
-      if (res < 0) {
+      err = res[0] as int;
+      cEvent = res[1] as Pointer<bindings.ENetEvent>;
+
+      if (err < 0) {
+        receivePort.close();
         throw const ENetException('Host service failed.');
       }
 
       return ENetEvent.parse(cEvent);
     } finally {
       malloc.free(cEvent);
+      isolate.kill(priority: Isolate.immediate);
     }
   }
 
+  final Completer<void> _serviceCompleter = Completer<void>();
+  bool _isServiceRunning = false;
+
+  /// Starts the ENet host service in an isolated process, listening for events
+  /// and shuttling packets between the host and its peers.
+  ///
+  /// [onEvent] - A function that processes incoming ENet should wait for events
+  /// [timeout] - The number of milliseconds ENet should wait for events
+  ///             before timing out. Defaults to `0` (no timeout).
+  ///
+  /// **Note**:
+  /// This method must not be called if the service is already running.
+  /// Events received from the isolate are forwarded to the [onEvent]
+  /// for processing. The service runs in a background isolate, ensuring
+  /// non-blocking performance.
+  Future<void> startService({
+    required void Function(ENetEvent event) onEvent,
+    int timeout = 0,
+  }) async {
+    if (_isServiceRunning) {
+      throw const ENetException('ENet host service already running.');
+    }
+
+    _isServiceRunning = true;
+
+    final receivePort = ReceivePort();
+    late Isolate isolate;
+
+    try {
+      isolate = await Isolate.spawn(
+        _serviceIsolated,
+        [
+          receivePort.sendPort,
+          _host,
+          timeout,
+          true,
+        ],
+        paused: false,
+      );
+
+      receivePort.listen((msg) {
+        final res = msg as List;
+        final err = res[0] as int;
+
+        if (err < 0) {
+          receivePort.close();
+          _serviceCompleter.completeError(
+            const ENetException('Host service failed.'),
+          );
+        }
+
+        final cEvent = res[1] as Pointer<bindings.ENetEvent>;
+        try {
+          onEvent.call(ENetEvent.parse(cEvent));
+        } finally {
+          calloc.free(cEvent);
+        }
+      });
+
+      await _serviceCompleter.future;
+    } finally {
+      receivePort.close();
+      isolate.kill(priority: Isolate.immediate);
+      _isServiceRunning = false;
+    }
+  }
+
+  /// Stops the ENet host service, signaling completion and
+  /// cleaning up resources.
+  ///
+  /// **Note**:
+  /// This method should be called to gracefully terminate the service
+  /// and ensure all associated resources are released.
+  void stopService() {
+    _serviceCompleter.complete();
+    _isServiceRunning = false;
+  }
+
   /// Destroys the host and all resources associated with it.
-  void destroy() => bindings.enet_host_destroy(_host);
+  void destroy() {
+    if (!_serviceCompleter.isCompleted) {
+      _serviceCompleter.complete();
+    }
+    bindings.enet_host_destroy(_host);
+  }
 
   /// Sends any queued packets on the host specified to its designated peers.
   void flush() => bindings.enet_host_flush(_host);
@@ -146,9 +235,18 @@ final class ENetHost implements Finalizable {
 Future<void> _serviceIsolated(List<dynamic> arg) async {
   final port = arg[0] as SendPort;
   final host = arg[1] as Pointer<bindings.ENetHost>;
-  final event = arg[2] as Pointer<bindings.ENetEvent>;
-  final timeout = arg[3] as int;
+  final timeout = arg[2] as int;
+  final loop = arg[3] as bool;
 
-  final res = bindings.enet_host_service(host, event, timeout);
-  port.send(res);
+  if (loop) {
+    while (true) {
+      final cEvent = malloc<bindings.ENetEvent>();
+      final res = bindings.enet_host_service(host, cEvent, timeout);
+      port.send([res, cEvent]);
+    }
+  } else {
+    final cEvent = malloc<bindings.ENetEvent>();
+    final res = bindings.enet_host_service(host, cEvent, timeout);
+    port.send([res, cEvent]);
+  }
 }

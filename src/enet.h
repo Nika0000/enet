@@ -227,6 +227,12 @@ static const struct in6_addr enet_v6_localhost = {{{0x00, 0x00, 0x00, 0x00, 0x00
 #define ENET_HOST_BROADCAST 0xFFFFFFFFU
 #define ENET_PORT_ANY 0
 
+#ifdef __ANDROID__
+#include <android/log.h>
+#define printf(...) __android_log_print(ANDROID_LOG_VERBOSE, "DartENet", __VA_ARGS__)
+#define perror(...) __android_log_print(ANDROID_LOG_ERROR, "DartENet", __VA_ARGS__)
+#endif
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -1328,6 +1334,10 @@ extern "C"
 
     ENetVersion enet_linked_version(void)
     {
+#ifdef ENET_DEBUG
+        printf("hello mazafcker");
+        perror("hello error");
+#endif
         return ENET_VERSION;
     }
 

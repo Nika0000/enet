@@ -26,6 +26,11 @@ void main(List<String> args) async {
 
       if (!config.dryRun && config.buildMode == BuildMode.debug) {
         defines['ENET_DEBUG'] = '1';
+
+        // link log lib for android
+        if (config.targetOS == OS.android) {
+          flags.add('-llog');
+        }
       }
 
       if (config.targetOS == OS.windows) {

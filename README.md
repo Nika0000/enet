@@ -116,34 +116,35 @@ void main(List<String> arguments) async {
 
   // Event loop to process ENet events, with a timeout
   // of 50 milliseconds that ENet should wait for events.
-  while (true) {
-    event = await host.service(timeout: 50);
+ await host.startService(
+    timeout: 50,
+    onEvent: (event) {
+      // Skip to the next iteration if there's no event.
+      if (event.type == ENetEventType.none) {
+        return;
+      }
 
-    // Skip to the next iteration if there's no event.
-    if (event.type == ENetEventType.none) {
-      continue;
-    }
-
-    // Handle events based on their type.
-    switch (event.type) {
-      case ENetEventType.connect:
-        print('New peer connected.');
-        break;
-      case ENetEventType.disconnect:
-        print('Peer disconnected.');
-        break;
-      case ENetEventType.receive:
-        if (event.packet == null || event.packet!.data.isEmpty) {
-          print('Received an empty message from the peer.');
-        } else {
-          final receivedMessage = utf8.decode(event.packet!.data);
-          print('New message from the peer: $receivedMessage');
-        }
-        break;
-      default:
-        break;
-    }
-  }
+      // Handle events based on their type.
+      switch (event.type) {
+        case ENetEventType.connect:
+          print('New peer connected.');
+          break;
+        case ENetEventType.disconnect:
+          print('Peer disconnected.');
+          break;
+        case ENetEventType.receive:
+          if (event.packet == null || event.packet!.data.isEmpty) {
+            print('Received an empty message from the peer.');
+          } else {
+            final receivedMessage = utf8.decode(event.packet!.data);
+            print('New message from the peer: $receivedMessage');
+          }
+          break;
+        default:
+          break;
+      }
+    },
+  );
 }
 
 ```
@@ -186,12 +187,12 @@ void main(List<String> arguments) async {
 
   // Event loop to process ENet events, with a timeout 
   // of 50 milliseconds that ENet should wait for events.
-  while (true) {
-    event = await host.service(timeout: 50);
-
+  host.startService(
+    timeout: 50, 
+    onEvent: (event) {
     // Skip to the next iteration if there's no event.
     if (event.type == ENetEventType.none) {
-      continue;
+      return;
     }
 
     // Handle the connection event and send messages every second.
@@ -229,7 +230,7 @@ void main(List<String> arguments) async {
       default:
         break;
     }
-  }
+  },);
 }
 ```
 
