@@ -15,7 +15,7 @@
 
 <div align="center">
     <img alt="Pub Version" src="https://img.shields.io/pub/v/enet">
-    <img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/Nika0000/enet/build.yaml">
+    <img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/Nika0000/enet/test.yaml">
     <img alt="GitHub License" src="https://img.shields.io/github/license/NIka0000/enet">
 </div>
 
@@ -79,7 +79,7 @@ dependencies:
   enet:
     git:
       url: https://github.com/Nika0000/enet_dart.git
-      ref: features/native-assets
+      ref: feature/native-assets
 ```
 
 ### Example Usage
@@ -104,8 +104,6 @@ void main(List<String> arguments) async {
     channelLimit: 1, // Communication limited to 1 channel.
   );
 
-  ENetEvent event;
-
   // Handle SIGINT (Ctrl+C) to cleanly shut down the host.
   ProcessSignal.sigint.watch().listen((e) {
     ENet.deinitialize();
@@ -116,7 +114,7 @@ void main(List<String> arguments) async {
 
   // Event loop to process ENet events, with a timeout
   // of 50 milliseconds that ENet should wait for events.
- await host.startService(
+  await host.startService(
     timeout: 50,
     onEvent: (event) {
       // Skip to the next iteration if there's no event.
@@ -158,7 +156,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:enet/enet.dart';
 
-void main(List<String> arguments) async {
+void main() async {
   // Initialize ENet for client operations.
   ENet.initialize();
 
@@ -174,8 +172,6 @@ void main(List<String> arguments) async {
     1  // Specify a channel limit for this peer connection.
   );
 
-  ENetEvent event;
-
   ProcessSignal.sigint.watch().listen((e) {
     ENet.deinitialize();
     exit(0);
@@ -187,7 +183,7 @@ void main(List<String> arguments) async {
 
   // Event loop to process ENet events, with a timeout 
   // of 50 milliseconds that ENet should wait for events.
-  host.startService(
+  await host.startService(
     timeout: 50, 
     onEvent: (event) {
     // Skip to the next iteration if there's no event.
@@ -220,17 +216,18 @@ void main(List<String> arguments) async {
         print('Disconnected from the Hest.');
         break;
       case ENetEventType.receive:
-        if (event.packet == null || event.packet!.data.isEmpty) {
-          print('Received an empty message from the host.');
-        } else {
-          final receivedMessage = utf8.decode(event.packet!.data);
-          print('New message from the host: $receivedMessage');
-        }
-        break;
+          if (event.packet == null || event.packet!.data.isEmpty) {
+            print('Received an empty message from the host.');
+          } else {
+           final receivedMessage = utf8.decode(event.packet!.data);
+            print('New message from the host: $receivedMessage');
+          }
+          break;
       default:
-        break;
-    }
-  },);
+          break;
+      }
+    },
+  );
 }
 ```
 
