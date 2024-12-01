@@ -23,9 +23,9 @@
 
 <div align="center">
   
-|      Windows       |       macOS        |       Linux        |      Android       |        iOS         | Web |
-| :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :-: |
-| :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x: |
+|      Windows       |       macOS        |       Linux        |      Android       |        iOS         |
+| :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
+| :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
   
 </div>
 
