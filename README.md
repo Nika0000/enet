@@ -97,7 +97,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:enet/enet.dart';
 
-void main(List<String> arguments) async {
+void main() async {
   // Initialize the ENet library, preparing it for use.
   ENet.initialize();
 
@@ -120,7 +120,7 @@ void main(List<String> arguments) async {
   // of 50 milliseconds that ENet should wait for events.
   await host.startService(
     timeout: 50,
-    onEvent: (event) {
+    (event) {
       // Skip to the next iteration if there's no event.
       if (event.type == ENetEventType.none) {
         return;
@@ -189,7 +189,7 @@ void main() async {
   // of 50 milliseconds that ENet should wait for events.
   await host.startService(
     timeout: 50, 
-    onEvent: (event) {
+    (event) {
     // Skip to the next iteration if there's no event.
     if (event.type == ENetEventType.none) {
       return;
