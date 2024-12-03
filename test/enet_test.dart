@@ -539,8 +539,6 @@ void main() {
       // Clean up
       host.stopService();
 
-      client.destroy();
-      host.destroy();
     });
   });
 }
