@@ -116,7 +116,6 @@ final class ENetHost implements Finalizable {
           timeout,
           false,
         ],
-        paused: false,
       );
 
       final res = await receivePort.first as List;
@@ -173,7 +172,6 @@ final class ENetHost implements Finalizable {
           timeout,
           true,
         ],
-        paused: false,
       );
 
       receivePort.listen((msg) {
