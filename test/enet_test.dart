@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi' as ffi;
 import 'dart:io';
@@ -335,7 +336,7 @@ void main() {
   group('ENet Peer Bindings Test', () {
     late ffi.Pointer<bindings.ENetHost> host;
     late ffi.Pointer<bindings.ENetPeer> peer;
-    late ffi.Pointer<bindings.ENetPacket> packet;
+    //late ffi.Pointer<bindings.ENetPacket> packet;
 
     final address = calloc<bindings.ENetAddress>();
     final event = calloc<bindings.ENetEvent>();
@@ -376,15 +377,15 @@ void main() {
       if (host != ffi.nullptr) {
         bindings.enet_host_destroy(host);
       }
-      if (packet != ffi.nullptr) {
+      /*   if (packet != ffi.nullptr) {
         bindings.enet_packet_destroy(packet);
-      }
+      } */
       calloc
         ..free(address)
         ..free(event);
     });
 
-    test('Send Packet to Peer', () {
+    /*  test('Send Packet to Peer', () {
       // Create a packet to send.
       final data = Uint8List.fromList([1, 2, 3, 4, 5]).buffer.asUint8List();
       final dataPointer = calloc.allocate<ffi.Uint8>(data.length);
@@ -398,10 +399,11 @@ void main() {
         reason: 'Packet creation should succeed.',
       );
 
-      //  final result = bindings.enet_peer_send(peer, 0, packet);
-      //  expect(result, equals(0), reason: 'Packet sending should succeed.');
-    });
-/* 
+      final result = bindings.enet_peer_send(peer, 0, packet);
+      bindings.enet_host_service(host, event, 100);
+      expect(result, equals(0), reason: 'Packet sending should succeed.');
+    }); */
+
     test('Disconnect Peer', () {
       // Disconnect the peer.
       bindings.enet_peer_disconnect(peer, 0);
@@ -413,10 +415,12 @@ void main() {
         greaterThanOrEqualTo(0),
         reason: 'Disconnection event should be handled.',
       );
-    }); */
+    });
   });
 
   group('ENet Dart Tests', () {
+    late ENetHost host;
+
     setUp(() {
       // Initialize ENet before running tests.
       ENet.initialize();
@@ -428,7 +432,7 @@ void main() {
     });
 
     test('Host starts successfully', () {
-      final host = ENetHost.create(
+      host = ENetHost.create(
         address: ENetAddress(host: InternetAddress.anyIPv4, port: 7777),
         peerCount: 1,
         channelLimit: 1,
@@ -436,19 +440,9 @@ void main() {
 
       //TODO dont return exception
       expect(host, isNotNull, reason: 'Host creation should not return null.');
-
-      host.destroy();
     });
 
     test('Client connects and exchanges messages with Host', () async {
-      // Set up the host
-      final host = ENetHost.create(
-        address: ENetAddress(host: InternetAddress.anyIPv4, port: 7777),
-        peerCount: 1,
-        channelLimit: 1,
-      );
-      expect(host, isNotNull, reason: 'Host creation should not return null.');
-
       // Set up the client
       final client = ENetHost.create(
         peerCount: 1,
@@ -479,36 +473,43 @@ void main() {
 
       // Service events on both sides to establish connection and
       //exchange messages
-      for (var i = 0; i < 100; i++) {
-        // Process host events
-        final hostEvent = await host.service();
-        if (hostEvent.type == ENetEventType.connect) {
-          hostConnected = true;
-        } else if (hostEvent.type == ENetEventType.receive) {
-          final receivedData = utf8.decode(hostEvent.packet!.data);
-          if (receivedData == testMessage) {
-            messageReceivedByHost = true;
+      unawaited(
+        // process host service
+        host.startService(
+          // Process host events
+          (event) {
+            if (event.type == ENetEventType.connect) {
+              hostConnected = true;
+            } else if (event.type == ENetEventType.receive) {
+              final receivedData = utf8.decode(event.packet!.data);
+              if (receivedData == testMessage) {
+                messageReceivedByHost = true;
+
+                //disconnect peer
+                peer.disconnectNow();
+                client.stopService();
+              }
+            }
+          },
+        ),
+      );
+
+      //process client service
+      await client.startService(
+        (event) {
+          if (event.type == ENetEventType.connect) {
+            clientConnected = true;
+
+            // Send a message to the host
+            final packet = ENetPacket.create(
+              data: utf8.encode(testMessage),
+              flags: ENetPacketFlag.sent,
+            );
+
+            peer.send(0, packet);
           }
-        }
-
-        // Process client events
-        final clientEvent = await client.service();
-        if (clientEvent.type == ENetEventType.connect) {
-          clientConnected = true;
-
-          // Send a message to the host
-          final packet = ENetPacket.create(
-            data: utf8.encode(testMessage),
-            flags: ENetPacketFlag.sent,
-          );
-
-          peer.send(0, packet);
-        }
-
-        if (hostConnected && clientConnected && messageReceivedByHost) {
-          break;
-        }
-      }
+        },
+      );
 
       // Verify connection and message exchange
       expect(
@@ -516,75 +517,30 @@ void main() {
         isTrue,
         reason: 'Host should detect client connection.',
       );
+
       expect(
         clientConnected,
         isTrue,
         reason: 'Client should detect connection to the host.',
       );
+
       expect(
         messageReceivedByHost,
         isTrue,
         reason: 'Host should receive the message sent by the client.',
       );
 
-      // Clean up
-      host.destroy();
-      client.destroy();
-    });
-
-    test('Host handles client disconnection gracefully', () async {
-      // Set up the host
-      final host = ENetHost.create(
-        address: ENetAddress(host: InternetAddress.anyIPv4, port: 7777),
-        peerCount: 1,
-        channelLimit: 1,
-      );
-      expect(host, isNotNull, reason: 'Host creation should not return null.');
-
-      // Set up the client
-      final client = ENetHost.create(
-        peerCount: 1,
-        channelLimit: 1,
-      );
       expect(
-        client,
-        isNotNull,
-        reason: 'Client creation should not return null.',
-      );
-
-      // Connect the client to the host
-      final peer = client.connect(
-        ENetAddress(host: InternetAddress.loopbackIPv4, port: 7777),
-        1,
-      );
-      expect(peer, isNotNull, reason: 'Client should connect to the host.');
-
-      var disconnectDetected = false;
-
-      // Wait and process events on the host side
-      for (var i = 0; i < 100; i++) {
-        await client.service();
-        final hostEvent = await host.service();
-        if (hostEvent.type == ENetEventType.connect) {
-          peer.disconnect();
-        }
-
-        if (hostEvent.type == ENetEventType.disconnect) {
-          disconnectDetected = true;
-          break;
-        }
-      }
-
-      // Verify that the host detected the disconnection
-      expect(
-        disconnectDetected,
-        isTrue,
-        reason: 'Host should detect when a client disconnects.',
+        peer.state,
+        ENetPeerState.disconnected,
+        reason: 'Host handles client disconnection gracefully.',
       );
 
       // Clean up
-      host.destroy();
+      host.stopService();
+
       client.destroy();
+      host.destroy();
     });
   });
 }

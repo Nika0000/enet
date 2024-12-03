@@ -122,7 +122,7 @@ final class ENetHost implements Finalizable {
       final res = await receivePort.first as List;
 
       err = res[0] as int;
-      cEvent = res[1] as Pointer<bindings.ENetEvent>;
+      cEvent = Pointer<bindings.ENetEvent>.fromAddress(res[1] as int);
 
       if (err < 0) {
         receivePort.close();
@@ -142,17 +142,17 @@ final class ENetHost implements Finalizable {
   /// Starts the ENet host service in an isolated process, listening for events
   /// and shuttling packets between the host and its peers.
   ///
-  /// [onEvent] - A function that processes incoming ENet should wait for events
+  /// [event] - A function that processes incoming ENet should wait for events
   /// [timeout] - The number of milliseconds ENet should wait for events
   ///             before timing out. Defaults to `0` (no timeout).
   ///
   /// **Note**:
   /// This method must not be called if the service is already running.
-  /// Events received from the isolate are forwarded to the [onEvent]
+  /// Events received from the isolate are forwarded to the [event]
   /// for processing. The service runs in a background isolate, ensuring
   /// non-blocking performance.
-  Future<void> startService({
-    required void Function(ENetEvent event) onEvent,
+  Future<void> startService(
+    void Function(ENetEvent event) event, {
     int timeout = 0,
   }) async {
     if (_isServiceRunning) {
@@ -187,11 +187,11 @@ final class ENetHost implements Finalizable {
           );
         }
 
-        final cEvent = res[1] as Pointer<bindings.ENetEvent>;
+        final cEvent = Pointer<bindings.ENetEvent>.fromAddress(res[1] as int);
         try {
-          onEvent.call(ENetEvent.parse(cEvent));
+          event.call(ENetEvent.parse(cEvent));
         } finally {
-          calloc.free(cEvent);
+          malloc.free(cEvent);
         }
       });
 
@@ -242,11 +242,11 @@ Future<void> _serviceIsolated(List<dynamic> arg) async {
     while (true) {
       final cEvent = malloc<bindings.ENetEvent>();
       final res = bindings.enet_host_service(host, cEvent, timeout);
-      port.send([res, cEvent]);
+      port.send([res, cEvent.address]);
     }
   } else {
     final cEvent = malloc<bindings.ENetEvent>();
     final res = bindings.enet_host_service(host, cEvent, timeout);
-    port.send([res, cEvent]);
+    port.send([res, cEvent.address]);
   }
 }
