@@ -26,7 +26,7 @@ dependencies:
  
 dev_dependencies:
   test: ^1.25.8
-  very_good_analysis: ^9.0.0
+  very_good_analysis: ">=9.0.0 <11.0.0"
 
 topics:
   - udp
